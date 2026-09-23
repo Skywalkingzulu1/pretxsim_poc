@@ -2,6 +2,10 @@
 
 **Air-gapped local EVM simulation proxy for secure transaction testing**
 
+<p align="center">
+  <img src="docs/assets/pretxsim_demo.gif" alt="PreTxSim demo: EIP-7702 delegation flagged, gate refuses; delegatecall+storage tx accepted" width="100%">
+</p>
+
 PreTxSim is a lightweight, air-gapped local EVM simulation proxy built in Rust on [`revm`](https://github.com/bluealloy/revm). It intercepts `eth_sendTransaction` calls and runs a full pre-execution structural analysis before any transaction hits the network — ensuring that malicious or buggy transactions are caught before broadcast.
 
 ## Key Features
@@ -74,6 +78,21 @@ src/
 | Env Var   | Default                  | Description                         |
 |-----------|--------------------------|-------------------------------------|
 | `RPC_URL` | `https://eth.llamarpc.com` | Upstream EVM RPC endpoint        |
+
+## Demo
+
+The recording above shows the real proxy against a deterministic local `anvil` fixture:
+
+- a transaction targeting a **delegated EOA** (EIP-7702 `0xEF0100` designator) is flagged and the gate **refuses** it
+- a transaction triggering a real **DELEGATECALL + storage write** is shown with non-zero `RiskInspector` counters and the gate **accepts** it after review
+- a local Ollama agent provides the PASS/WARN brief between simulation and gate
+
+Reproduce it end-to-end (requires Rust, Foundry, ffmpeg + [agg](https://github.com/asciinema/agg)):
+
+```bash
+cargo build --release
+bash demo/render.sh
+```
 
 ## License
 

@@ -78,6 +78,19 @@ pub struct RiskInspector {
     pre_allowances: HashMap<(Address, Address, Address), U256>,
 }
 
+/// Parse an EIP-7702 delegation designator.
+///
+/// A delegated EOA's code is exactly: 0xEF0100 || address (23 bytes).
+/// Returns the delegated-to address, or None if the code is not a designator.
+/// (The previous check tested only the EF01 prefix and sliced bytes 2..22,
+/// producing a misaligned address.)
+pub fn parse_delegation_designator(code: &[u8]) -> Option<Address> {
+    if code.len() < 23 || code[0] != 0xEF || code[1] != 0x01 || code[2] != 0x00 {
+        return None;
+    }
+    Some(Address::from_slice(&code[3..23]))
+}
+
 impl Default for RiskInspector {
     fn default() -> Self {
         Self {
@@ -108,6 +121,23 @@ impl<DB: Database + DatabaseRef> Inspector<DB> for RiskInspector {
                 self.pre_balances.insert(to, acc.balance);
                 // Store code hash for delegation detection
                 self.pre_code_hashes.insert(to, acc.code_hash);
+
+                // EIP-7702: if the target already carries a delegation
+                // designator, flag it at load time so the alert fires for a
+                // delegated EOA (previously this only triggered on a
+                // mid-simulation code-hash change, which never happens for a
+                // plain eth_sendTransaction).
+                if let Ok(code) = db.code_by_hash_ref(acc.code_hash) {
+                    let bytes = code.original_bytes();
+                    if let Some(delegated_to) = parse_delegation_designator(&bytes) {
+                        self.analysis.delegation_changes.push(DelegationChange {
+                            address: format!("{:#x}", to),
+                            old_code_hash: None,
+                            new_code_hash: Some(format!("{:#x}", acc.code_hash)),
+                            delegated_to: Some(format!("{:#x}", delegated_to)),
+                        });
+                    }
+                }
             }
         }
     }
@@ -193,10 +223,8 @@ impl RiskInspector {
                 if *old_hash != new_hash {
                     // Fetch the new code to check for EIP-7702 delegation
                     let delegated_to = if let Ok(code) = db.code_by_hash_ref(new_hash) {
-                        let bytes = code.original_bytes();
-                        if bytes.len() >= 22 && bytes[0] == 0xEF && bytes[1] == 0x01 {
-                            Some(format!("{:#x}", Address::from_slice(&bytes[2..22])))
-                        } else { None }
+                        parse_delegation_designator(code.original_bytes().as_ref())
+                            .map(|addr| format!("{:#x}", addr))
                     } else { None };
 
                     self.analysis.delegation_changes.push(DelegationChange {
@@ -216,3 +244,59 @@ const ERC20_APPROVAL: &[u8] = &[0x8c, 0x5b, 0xe1, 0xa5];
 const ERC721_TRANSFER: &[u8] = &[0xdd, 0xf2, 0x52, 0xad];
 const ERC1155_SINGLE: &[u8] = &[0xc3, 0xd5, 0x81, 0xb9];
 const ERC1155_BATCH: &[u8] = &[0x4a, 0x39, 0x3e, 0xe0];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    const DELEGATEE: &str = "0x90F79bf6EB2c4f870365E785982E1f101E93b906";
+
+    fn designator_bytes(delegatee: Address) -> Vec<u8> {
+        let mut v = vec![0xEF, 0x01, 0x00];
+        v.extend_from_slice(delegatee.as_slice());
+        v
+    }
+
+    #[test]
+    fn parses_valid_designator() {
+        let delegatee = Address::from_str(DELEGATEE).unwrap();
+        let code = designator_bytes(delegatee);
+        assert_eq!(code.len(), 23);
+        assert_eq!(parse_delegation_designator(&code), Some(delegatee));
+    }
+
+    #[test]
+    fn rejects_short_input() {
+        let delegatee = Address::from_str(DELEGATEE).unwrap();
+        let mut code = designator_bytes(delegatee);
+        code.pop(); // 22 bytes: one short
+        assert_eq!(parse_delegation_designator(&code), None);
+        assert_eq!(parse_delegation_designator(&[0xEF, 0x01]), None);
+        assert_eq!(parse_delegation_designator(&[]), None);
+    }
+
+    #[test]
+    fn rejects_wrong_prefix() {
+        let delegatee = Address::from_str(DELEGATEE).unwrap();
+        let mut code = designator_bytes(delegatee);
+        code[0] = 0xEF;
+        code[1] = 0x02; // EF02: not a designator
+        assert_eq!(parse_delegation_designator(&code), None);
+
+        // Regular contract code starting with 0x60 (PUSH1) must not match.
+        let contract = vec![0x60, 0x80, 0x60, 0x40, 0x52];
+        assert_eq!(parse_delegation_designator(&contract), None);
+    }
+
+    #[test]
+    fn accepts_exactly_23_bytes_and_nothing_shorter() {
+        let delegatee = Address::from_str(DELEGATEE).unwrap();
+        let code = designator_bytes(delegatee);
+        for n in 0..=23usize {
+            let truncated = &code[..n];
+            let expected = if n == 23 { Some(delegatee) } else { None };
+            assert_eq!(parse_delegation_designator(truncated), expected, "failed at len={}", n);
+        }
+    }
+}
