@@ -109,18 +109,15 @@
   .foot { margin-top: 26px; font-size: 12.5px; color: var(--muted); }
   .okline { border-left: 4px solid var(--ok); padding: 10px 16px; background: rgba(134,239,172,.06); border-radius: 0 10px 10px 0; margin-top: 18px; font-size: 14.5px; }
   .goldline { border-left: 4px solid var(--gold); padding: 10px 16px; background: rgba(245,200,107,.07); border-radius: 0 10px 10px 0; margin-top: 18px; font-size: 14.5px; }
-  #pdfbtn {
-    background: var(--card); color: var(--gold); border: 1px solid rgba(245,200,107,.4);
-    border-radius: 10px; height: 38px; padding: 0 14px; font-size: 13px; font-weight: 700; cursor: pointer;
-  }
-  #pdfbtn:hover { background: rgba(245,200,107,.12); }
   @media print {
-    body { overflow: visible; }
+    body { overflow: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     #bar, #hud { display: none; }
     #deck { height: auto; display: block; }
     .slide { display: block; width: 100%; max-height: none; overflow: visible;
-      border-radius: 0; border: none; box-shadow: none; page-break-after: always; }
+      border-radius: 0; border: 1px solid var(--border); box-shadow: none; page-break-after: always; }
     .slide:last-child { page-break-after: avoid; }
+    .slide.active { animation: none; }
+    h1 .grad { background: none; color: var(--accent); -webkit-text-fill-color: var(--accent); }
     @page { size: landscape; margin: 10mm; }
   }
 </style>
@@ -139,7 +136,7 @@
       <div class="card stat"><div class="v">0</div><div class="l">bytes of tx data shared with third parties</div></div>
       <div class="card stat"><div class="v gold">2 rails</div><div class="l">Canton flagship · EVM expansion</div></div>
     </div>
-    <p class="foot">Skywalkingzulu1 · <span class="mono">github.com/Skywalkingzulu1/canton-preview-gate</span> · <span class="mono">github.com/Skywalkingzulu1/pretxsim_poc</span> · Use ← → arrow keys to navigate · ⤓ PDF button below saves this deck</p>
+    <p class="foot">Skywalkingzulu1 · <span class="mono">github.com/Skywalkingzulu1/canton-preview-gate</span> · <span class="mono">github.com/Skywalkingzulu1/pretxsim_poc</span> · Use ← → arrow keys to navigate</p>
   </section>
 
   <!-- 2 PROBLEM -->
@@ -250,7 +247,6 @@
   <div id="dots"></div>
   <span id="count">1 / 9</span>
   <button id="next" aria-label="Next">›</button>
-  <button id="pdfbtn" title="Print / save as PDF">⤓ PDF</button>
 </div>
 
 <script>
@@ -276,7 +272,6 @@
   }
   document.getElementById('prev').addEventListener('click', function () { go(i - 1); });
   document.getElementById('next').addEventListener('click', function () { go(i + 1); });
-  document.getElementById('pdfbtn').addEventListener('click', function () { window.print(); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(i + 1);
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(i - 1);
