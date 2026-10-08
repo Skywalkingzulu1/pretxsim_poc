@@ -16,6 +16,7 @@ use reqwest::Client;
 use serde_json::{json, Value};
 use std::str::FromStr;
 use std::error::Error;
+use std::env;
 
 #[rpc(server)]
 pub trait LocalGatekeeper {
@@ -111,13 +112,11 @@ impl GatekeeperServer {
 
         Ok(res["result"].clone())
     }
-}
 
-#[async_trait]
-impl LocalGatekeeperServer for GatekeeperServer {
-    async fn send_transaction(&self, tx: serde_json::Value) -> Result<String, ErrorObjectOwned> {
-        println!("\n[⚡ Intercepted Transaction Request]");
-
+    /// Parse an `eth_sendTransaction`-style JSON value, run the revm
+    /// simulation with the RiskInspector, and consult the local LLM agent.
+    /// Shared by the interactive proxy path and `--ci` mode.
+    pub async fn simulate_from_value(&self, tx: serde_json::Value) -> Result<(inspector::EVMStructuralAnalysis, ExecutionResult, String), ErrorObjectOwned> {
         let from = tx.get("from").and_then(|v| v.as_str()).unwrap_or("");
         let to = tx.get("to").and_then(|v| v.as_str()).unwrap_or("");
         let value = tx.get("value").and_then(|v| v.as_str()).unwrap_or("0x0");
@@ -162,20 +161,31 @@ impl LocalGatekeeperServer for GatekeeperServer {
         .map_err(|e| ErrorObjectOwned::owned(-32603, format!("Task join error: {}", e), None::<()>))?
         .map_err(|e| ErrorObjectOwned::owned(-32603, format!("Simulation failed: {}", e), None::<()>))?;
 
-        let summary = serde_json::to_string_pretty(&analysis).unwrap();
-        println!("[*] Structural Analysis Extracted:\n{}", summary);
-
-        println!("\n[*] Consulting Local LLM Agent...");
+        let summary = serde_json::to_string_pretty(&analysis).unwrap_or_else(|_| "{}".to_string());
         let advice = agent::query_local_agent(&summary).await.unwrap_or_else(|_| "Agent offline".to_string());
+
+        Ok((analysis, exec_result, advice))
+    }
+}
+
+#[async_trait]
+impl LocalGatekeeperServer for GatekeeperServer {
+    async fn send_transaction(&self, tx: serde_json::Value) -> Result<String, ErrorObjectOwned> {
+        println!("\n[*] Intercepted Transaction Request");
+
+        let (analysis, exec_result, advice) = self.simulate_from_value(tx).await?;
+
+        let summary = serde_json::to_string_pretty(&analysis).unwrap_or_else(|_| "{}".to_string());
+        println!("[*] Structural Analysis Extracted:\n{}", summary);
 
         println!("\n================ SECURITY AGENT BRIEF ================");
         println!("{}", advice);
         println!("======================================================");
 
         if exec_result.is_success() {
-            println!("\n[✓] Simulation succeeded");
+            println!("\n[+] Simulation succeeded");
         } else {
-            println!("\n[✗] Simulation reverted/failed");
+            println!("\n[-] Simulation reverted/failed");
         }
 
         println!("\nProceed with broadcast to network? [y/N]: ");
@@ -206,7 +216,47 @@ impl LocalGatekeeperServer for GatekeeperServer {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let rpc_url = std::env::var("RPC_URL").unwrap_or_else(|_| "https://eth.llamarpc.com".to_string());
+    let rpc_url = env::var("RPC_URL").unwrap_or_else(|_| "https://eth.llamarpc.com".to_string());
+    let args: Vec<String> = env::args().collect();
+
+    // CI mode: read a single tx JSON from stdin, simulate, print structured
+    // JSON to stdout, exit 1 when BLOCK heuristics trigger. Never prompts.
+    // Example: type examples/demo_txs.json | pretxsim_poc --ci
+    if args.iter().any(|a| a == "--ci") {
+        let mut input = String::new();
+        use std::io::Read;
+        std::io::stdin().read_to_string(&mut input).unwrap_or_default();
+        let trimmed = input.trim();
+        let tx: serde_json::Value = if trimmed.is_empty() {
+            serde_json::json!({})
+        } else {
+            serde_json::from_str(trimmed).unwrap_or_else(|_| serde_json::json!({}))
+        };
+        let server = GatekeeperServer::new(rpc_url);
+        match server.simulate_from_value(tx).await {
+            Ok((analysis, exec_result, advice)) => {
+                let out = serde_json::json!({
+                    "analysis": analysis,
+                    "execution_success": exec_result.is_success(),
+                    "advice": advice,
+                });
+                println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                let is_blocked = analysis.delegatecalls_detected > 0
+                    || analysis.selfdestruct_triggered
+                    || !analysis.delegation_changes.is_empty()
+                    || analysis.storage_slots_written > 10;
+                if is_blocked {
+                    std::process::exit(1);
+                }
+                return Ok(());
+            }
+            Err(e) => {
+                let out = serde_json::json!({ "error": e.message(), "code": e.code() });
+                eprintln!("{}", serde_json::to_string(&out).unwrap());
+                std::process::exit(1);
+            }
+        }
+    }
 
     println!("======================================================");
     println!("  PreTxSim Micro-Agent Proxy Live on 127.0.0.1:8545");
