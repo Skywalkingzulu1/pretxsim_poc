@@ -109,6 +109,20 @@
   .foot { margin-top: 26px; font-size: 12.5px; color: var(--muted); }
   .okline { border-left: 4px solid var(--ok); padding: 10px 16px; background: rgba(134,239,172,.06); border-radius: 0 10px 10px 0; margin-top: 18px; font-size: 14.5px; }
   .goldline { border-left: 4px solid var(--gold); padding: 10px 16px; background: rgba(245,200,107,.07); border-radius: 0 10px 10px 0; margin-top: 18px; font-size: 14.5px; }
+  #pdfbtn {
+    background: var(--card); color: var(--gold); border: 1px solid rgba(245,200,107,.4);
+    border-radius: 10px; height: 38px; padding: 0 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  #pdfbtn:hover { background: rgba(245,200,107,.12); }
+  @media print {
+    body { overflow: visible; }
+    #bar, #hud { display: none; }
+    #deck { height: auto; display: block; }
+    .slide { display: block; width: 100%; max-height: none; overflow: visible;
+      border-radius: 0; border: none; box-shadow: none; page-break-after: always; }
+    .slide:last-child { page-break-after: avoid; }
+    @page { size: landscape; margin: 10mm; }
+  }
 </style>
 </head>
 <body>
@@ -117,53 +131,53 @@
 
   <!-- 1 TITLE -->
   <section class="slide">
-    <span class="kicker">PreTxSim · Accelerator Pitch</span>
-    <h1>The local security layer <span class="grad">for every onchain transaction.</span></h1>
-    <p class="sub">PreTxSim is an open-source, air-gapped transaction simulation proxy. It rehearses every transaction against live state and blocks the dangerous ones — with nothing ever leaving the user's machine. The privacy-preserving alternative to a market dominated by cloud APIs.</p>
+    <span class="kicker">PreviewGate by PreTxSim · AppsFactory Accelerator</span>
+    <h1>The pre-execution policy engine <span class="grad">for Canton Network &amp; cross-chain capital.</span></h1>
+    <p class="sub">Deterministic, non-consuming transaction rehearsal for <b style="color:var(--fg)">Daml smart contracts</b> and multi-chain agentic rails — with zero sub-transaction privacy leaks. One engine, two rails: <b style="color:var(--fg)">PreviewGate</b> on Canton, <b style="color:var(--fg)">PreTxSim</b> on EVM.</p>
     <div class="grid3">
-      <div class="card stat"><div class="v">:8545</div><div class="l">drop-in proxy — wallets, bots, agents, CI</div></div>
+      <div class="card stat"><div class="v">6/6</div><div class="l">Daml proofs held — Canton MVP live</div></div>
       <div class="card stat"><div class="v">0</div><div class="l">bytes of tx data shared with third parties</div></div>
-      <div class="card stat"><div class="v gold">100%</div><div class="l">open-source Rust + revm</div></div>
+      <div class="card stat"><div class="v gold">2 rails</div><div class="l">Canton flagship · EVM expansion</div></div>
     </div>
-    <p class="foot">Skywalkingzulu1 · <span class="mono">github.com/Skywalkingzulu1/pretxsim_poc</span> · Use ← → arrow keys to navigate</p>
+    <p class="foot">Skywalkingzulu1 · <span class="mono">github.com/Skywalkingzulu1/canton-preview-gate</span> · <span class="mono">github.com/Skywalkingzulu1/pretxsim_poc</span> · Use ← → arrow keys to navigate · ⤓ PDF button below saves this deck</p>
   </section>
 
   <!-- 2 PROBLEM -->
   <section class="slide">
     <span class="kicker">Problem</span>
-    <h2><span class="n">01</span>Signing is blind — and the fixes all phone home</h2>
+    <h2><span class="n">01</span>Intent is opaque before settlement — on every ledger</h2>
     <div class="grid2">
-      <div class="card"><h3>Losses are growing</h3><p>Wallet-drainer phishing stole <b>$494M in 2024</b> (+67% YoY, 332k victims). One malicious approval or EIP-7702 delegation empties a wallet. Agents moving money onchain multiply the attack surface.</p></div>
-      <div class="card"><h3>Incumbents see your flow</h3><p>Blockaid ($83M raised), Tenderly, and wallets' in-house sims all execute <b>on vendor servers</b>. Transaction intent — trade flow, treasury moves, agent behavior — leaks to a third party. Enterprises and funds can't accept that. (Alchemy killed its sim APIs in Sept 2026.)</p></div>
+      <div class="card"><h3>On Canton: atomic but blind</h3><p>Commits are atomic — yet <b>intent is opaque prior to settlement</b>. A payer staring at a contract ID can't answer "what will this do, and is it inside my mandate?" Public RPC dry-runs leak enterprise <b>sub-transaction privacy metadata</b> to external nodes — unacceptable for treasuries, RWA issuers, and agent operators.</p></div>
+      <div class="card"><h3>On EVM: blind and drained</h3><p>Wallet-drainer phishing stole <b>$494M in 2024</b> (+67% YoY). And every serious simulation fix — Blockaid ($83M raised), Tenderly — executes <b>on vendor servers</b>, leaking trade flow and treasury moves. (Alchemy killed its sim APIs in Sept 2026.)</p></div>
     </div>
-    <div class="goldline">The gap: no <b>local-first, open, programmable</b> simulation layer exists. Security is a vendor API call — it should be infrastructure you run.</div>
+    <div class="goldline">The gap: no <b>deterministic, privacy-preserving pre-execution layer</b> exists for either world. PreviewGate fills it on Canton; PreTxSim fills it on EVM.</div>
   </section>
 
   <!-- 3 SOLUTION -->
   <section class="slide">
-    <span class="kicker">Solution</span>
-    <h2><span class="n">02</span>A security proxy at the signing moment</h2>
-    <p class="sub">Point anything that signs at <span class="mono">http://127.0.0.1:8545</span>. PreTxSim intercepts <span class="mono">eth_sendTransaction</span>, simulates it locally against live state, produces a risk brief, and gates broadcast on your approval — or your pipeline's.</p>
-    <div class="grid3">
-      <div class="card"><h3>For users</h3><p>Wallet guardrail: malicious txs refused <b>before</b> broadcast, in plain language.</p></div>
-      <div class="card"><h3>For agents &amp; bots</h3><p>Mandatory sandbox: autonomous payments can't drain what simulation blocks.</p></div>
-      <div class="card"><h3>For teams</h3><p><span class="mono">--ci</span> mode: JSON risk reports that fail the build on BLOCK findings.</p></div>
+    <span class="kicker">Solution · two rails, one engine</span>
+    <h2><span class="n">02</span>Deterministic rehearsal before anything commits</h2>
+    <p class="sub">The same thesis on both ledgers: <b style="color:var(--fg)">show exactly what will happen, gate what shouldn't</b> — with zero privacy leakage.</p>
+    <div class="grid2">
+      <div class="card"><h3>Canton / Daml — PreviewGate (flagship)</h3><ul><li>Non-consuming <span class="mono">Preview</span> choices evaluate owner policy bounds (<span class="mono">GatedPayment</span>) in-memory — <b>no state commits</b></li><li>In-policy settles; out-of-policy escalates to single-use owner grants</li><li>Every claim proven by Daml Script; one-command <span class="mono">verify.sh</span></li></ul></div>
+      <div class="card"><h3>EVM / cross-chain — PreTxSim (expansion)</h3><ul><li>Air-gapped <span class="mono">:8545</span> proxy: local <b>revm</b> traces for bridge &amp; agent flows</li><li><span class="mono">RiskInspector</span> + offline Ollama brief; <span class="mono">--ci</span> JSON reports that fail builds</li><li>Wallets, bots, agents, CI — zero integration cost</li></ul></div>
     </div>
   </section>
 
   <!-- 4 PRODUCT -->
   <section class="slide">
-    <span class="kicker">Product · live today</span>
+    <span class="kicker">Product · live today, both rails</span>
     <h2><span class="n">03</span>Working software, not slides</h2>
+<pre><span class="m">$ damlc test  # Canton Network (Daml)</span>
+<span class="g">[*] PolicyGateTest: 6/6 claims held (Preview → ExecuteApproved)</span>
+<span class="c">[*] Verdicts: EXECUTABLE | REQUIRES_APPROVAL — 0 privacy leak</span></pre>
 <pre><span class="m">$ curl -X POST 127.0.0.1:8545 -d '{"method":"eth_sendTransaction", ...}'</span>
-<span class="c">[*] revm simulation vs live state → balance deltas, gas, storage writes</span>
-<span class="c">[*] RiskInspector → delegatecalls · selfdestruct · allowances · EIP-7702</span>
-<span class="g">[+] Ollama (local) brief: PASS / WARN — zero data leaves the box</span>
-<span class="m">Proceed with broadcast? [y/N]:</span></pre>
+<span class="c">[*] Local revm trace → RiskInspector → Ollama brief</span>
+<span class="g">[+] PASS / WARN — zero data leaves the box</span></pre>
     <div class="grid3">
-      <div class="card stat"><div class="v">✓</div><div class="l"><span class="mono">cargo build</span> green · tested <span class="mono">--ci</span> end to end</div></div>
-      <div class="card stat"><div class="v">✓</div><div class="l"><span class="mono">docker compose up</span> → proxy + Ollama</div></div>
-      <div class="card stat"><div class="v">✓</div><div class="l">Demo video + runbook shipped in-repo</div></div>
+      <div class="card stat"><div class="v">✓</div><div class="l">Daml proofs green · Rust build green · <span class="mono">--ci</span> tested</div></div>
+      <div class="card stat"><div class="v">✓</div><div class="l">One-command reproduce on both rails</div></div>
+      <div class="card stat"><div class="v">✓</div><div class="l">Runbooks + demo assets shipped in-repo</div></div>
     </div>
   </section>
 
@@ -176,7 +190,7 @@
       <div class="card stat"><div class="v gold">$83M</div><div class="l">raised by Blockaid alone — the category is venture-scale</div></div>
       <div class="card stat"><div class="v gold">6.3B</div><div class="l">transactions scanned by the leader — simulation is default infra now</div></div>
     </div>
-    <p class="sub" style="margin-top:18px">Wedge strategy: win the segments the cloud can't serve — <b style="color:var(--fg)">privacy-sensitive treasuries, regulated entities, MEV/agent operators, and self-hosted CI</b> — then expand outward as the open standard.</p>
+    <p class="sub" style="margin-top:18px">Wedge strategy: win <b style="color:var(--fg)">Canton enterprise first</b> — treasuries, RWA issuers, node operators with zero tolerance for intent leakage — then carry the same engine outward to EVM agent rails and self-hosted CI as the open standard.</p>
   </section>
 
   <!-- 6 BUSINESS MODEL -->
@@ -195,10 +209,10 @@
     <span class="kicker">Competition</span>
     <h2><span class="n">06</span>We don't out-data them. We out-position them.</h2>
     <div class="grid2">
-      <div class="card"><h3>Them: cloud intelligence</h3><p>Blockaid (6.3B txs of labels), Blowfish/Phantom, WalletGuard/MetaMask, Tenderly. Moat = <b>data network</b>. Price = <b>your transaction flow</b>.</p></div>
-      <div class="card"><h3>Us: local infrastructure</h3><p>Moat = <b>privacy + form factor</b>: the only drop-in, open, offline simulation layer. Plus <span class="mono">--ci</span> enforcement — a surface none of the wallet tools cover.</p></div>
+      <div class="card"><h3>EVM: cloud intelligence</h3><p>Blockaid (6.3B txs of labels), Blowfish/Phantom, WalletGuard/MetaMask, Tenderly. Moat = <b>data network</b>. Price = <b>your transaction flow</b>. We out-position them with locality + <span class="mono">--ci</span> enforcement.</p></div>
+      <div class="card"><h3>Canton: open field</h3><p>HackCanton entries do <b>enforcement</b> (spending limits, collateral registries) — <b>nobody does preview</b>. PreviewGate is the only pre-execution rehearsal layer for Daml: see-before-settle with zero privacy leakage.</p></div>
     </div>
-    <div class="okline">One-liner: <b>they simulate your transaction on their servers — we simulate it on yours.</b></div>
+    <div class="okline">One-liner: <b>they simulate your transaction on their servers — we rehearse it inside your perimeter.</b></div>
   </section>
 
   <!-- 8 TEAM -->
@@ -207,25 +221,26 @@
     <h2><span class="n">07</span>Technical solo founder, shipping in public</h2>
     <div class="grid2">
       <div class="card"><h3>Builder profile</h3><p>Rust + EVM internals (<span class="mono">revm</span>), local-LLM systems, DevSecOps pipelines. Grant-track record: W3F, Arbitrum, Optimism, Ethereum ESP applications prepared; ZK + agent infrastructure background.</p></div>
-      <div class="card"><h3>Operating style</h3><p>Proof over pitch: every claim ships with a reproducible runbook. 12 hackathon-targeted repos, working CI-gate demo, and a parallel Canton MVP (PreviewGate) built in one session.</p></div>
+      <div class="card"><h3>Operating style</h3><p>Proof over pitch: every claim ships with a reproducible runbook. PreviewGate (6/6 Daml proofs green) plus PreTxSim (tested <span class="mono">--ci</span> gate) — both built and verified in days, in public.</p></div>
     </div>
     <div class="goldline">Hiring needs: none yet — leverage is code. First hire post-traction: DevRel / partnerships for wallet + agent-treasury distribution.</div>
   </section>
 
   <!-- 9 ASK -->
   <section class="slide">
-    <span class="kicker">The ask</span>
-    <h2><span class="n">08</span>What we're looking for</h2>
+    <span class="kicker">The ask · Canton first</span>
+    <h2><span class="n">08</span>Canton is the flagship; EVM is the expansion</h2>
+    <p class="sub">Canton Network is our initial enterprise launchpad — institutional treasuries, RWA issuers, node operators. Public EVM chains are the secondary expansion vector for the same engine.</p>
     <div class="grid3">
-      <div class="card"><h3>Design partners</h3><p>Wallets, agent treasuries, MEV teams: run PreTxSim in shadow mode for 2 weeks, compare catches.</p></div>
-      <div class="card"><h3>Pilot deployments</h3><p>One regulated entity + one agent operator on <span class="mono">--ci</span> enforcement by end of quarter.</p></div>
-      <div class="card"><h3>Capital</h3><p>Pre-seed to go multi-chain (Monad, BNB, Base), publish latency benchmarks, and ship compliance policy packs.</p></div>
+      <div class="card"><h3>Design partners</h3><p>One Canton treasury/wallet team on PreviewGate policy envelopes; one agent operator on PreTxSim rails. Shadow-mode pilots, compare catches.</p></div>
+      <div class="card"><h3>With AppsFactory</h3><p>Mentorship on Canton go-to-market, DevNet deployment path, intros to RWA + treasury builders in the ecosystem.</p></div>
+      <div class="card"><h3>Capital</h3><p>Pre-seed to harden PreviewGate (recurring policy registries, Canton Coin settlement), expand EVM multichain, and ship compliance policy packs.</p></div>
     </div>
     <div class="cta-row">
-      <span class="btn primary">Repo: pretxsim_poc</span>
-      <span class="btn">Demo: demo_runbook.md</span>
+      <span class="btn primary">canton-preview-gate</span>
+      <span class="btn">pretxsim_poc</span>
     </div>
-    <p class="foot">PreTxSim — see it before you sign it. · Thank you.</p>
+    <p class="foot">PreviewGate by PreTxSim — rehearse before you settle. · Thank you.</p>
   </section>
 
 </div>
@@ -235,6 +250,7 @@
   <div id="dots"></div>
   <span id="count">1 / 9</span>
   <button id="next" aria-label="Next">›</button>
+  <button id="pdfbtn" title="Print / save as PDF">⤓ PDF</button>
 </div>
 
 <script>
@@ -260,6 +276,7 @@
   }
   document.getElementById('prev').addEventListener('click', function () { go(i - 1); });
   document.getElementById('next').addEventListener('click', function () { go(i + 1); });
+  document.getElementById('pdfbtn').addEventListener('click', function () { window.print(); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(i + 1);
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(i - 1);
