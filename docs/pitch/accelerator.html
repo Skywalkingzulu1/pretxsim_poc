@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PreTxSim — Accelerator Pitch Deck</title>
+<style>
+  :root {
+    --bg: #070b16;
+    --panel: #0e1526;
+    --card: #131d33;
+    --fg: #eef3fc;
+    --muted: #93a1bd;
+    --accent: #5eead4;
+    --accent2: #7aa5ff;
+    --warn: #fca5a5;
+    --ok: #86efac;
+    --gold: #f5c86b;
+    --border: #233050;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(1200px 700px at 70% -10%, #16244a 0%, var(--bg) 55%) fixed, var(--bg);
+    color: var(--fg);
+    font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+    overflow: hidden;
+    line-height: 1.55;
+  }
+  #deck { height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .slide {
+    display: none;
+    width: min(1020px, 92vw);
+    max-height: 88vh;
+    overflow: auto;
+    background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0)), var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: clamp(28px, 5vw, 64px);
+    box-shadow: 0 30px 80px rgba(0,0,0,.5);
+  }
+  .slide.active { display: block; animation: rise .35s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .kicker {
+    display: inline-block; font-size: 12.5px; font-weight: 800; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--gold);
+    border: 1px solid rgba(245,200,107,.4); background: rgba(245,200,107,.08);
+    padding: 5px 14px; border-radius: 999px; margin-bottom: 20px;
+  }
+  h1 { font-size: clamp(34px, 5.4vw, 58px); line-height: 1.08; margin-bottom: 14px; }
+  h1 .grad {
+    background: linear-gradient(92deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  h2 { font-size: clamp(24px, 3.4vw, 36px); margin-bottom: 16px; }
+  h2 .n { color: var(--gold); font-weight: 800; margin-right: 10px; }
+  p.sub { color: var(--muted); font-size: clamp(15px, 2vw, 19px); max-width: 64ch; }
+  p + p { margin-top: 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 22px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  @media (max-width: 720px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px;
+  }
+  .card h3 { font-size: 16px; margin-bottom: 6px; color: var(--accent); }
+  .card p, .card li { font-size: 14.5px; color: var(--muted); }
+  .card p b, .card li b { color: var(--fg); }
+  .card ul { list-style: none; }
+  .card li { padding: 3px 0 3px 20px; position: relative; }
+  .card li::before { content: "▸"; position: absolute; left: 2px; color: var(--accent); }
+  .stat { text-align: center; }
+  .stat .v { font-size: clamp(28px, 4.2vw, 44px); font-weight: 800; color: var(--accent); }
+  .stat .v.gold { color: var(--gold); }
+  .stat .l { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+  code, .mono {
+    font-family: Consolas, "SF Mono", monospace; font-size: .9em;
+    color: var(--accent); background: rgba(94,234,212,.07);
+    border: 1px solid rgba(94,234,212,.22); padding: 1px 7px; border-radius: 6px;
+    word-break: break-all;
+  }
+  pre {
+    background: #0a1122; border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; margin-top: 18px; overflow: auto; font-size: 13.5px;
+  }
+  pre .g { color: var(--ok); } pre .r { color: var(--warn); }
+  pre .c { color: var(--accent); } pre .m { color: var(--muted); }
+  .cta-row { display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 12px 22px; border-radius: 12px; font-weight: 800;
+    font-size: 15px; border: 1px solid var(--border); color: var(--accent);
+    background: rgba(94,234,212,.07);
+  }
+  .btn.primary { background: var(--gold); color: #241a05; border-color: transparent; }
+  #bar { position: fixed; top: 0; left: 0; height: 4px; background: linear-gradient(90deg, var(--gold), var(--accent)); width: 0; z-index: 10; }
+  #hud {
+    position: fixed; bottom: 18px; left: 0; right: 0; display: flex;
+    align-items: center; justify-content: center; gap: 18px; z-index: 10;
+    color: var(--muted); font-size: 13px; user-select: none;
+  }
+  #hud button {
+    background: var(--card); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 10px; width: 38px; height: 38px; font-size: 18px; cursor: pointer;
+  }
+  #hud button:hover { border-color: var(--gold); }
+  #dots { display: flex; gap: 7px; }
+  #dots span { width: 9px; height: 9px; border-radius: 50%; background: #2a3852; cursor: pointer; }
+  #dots span.on { background: var(--gold); }
+  .foot { margin-top: 26px; font-size: 12.5px; color: var(--muted); }
+  .okline { border-left: 4px solid var(--ok); padding: 10px 16px; background: rgba(134,239,172,.06); border-radius: 0 10px 10px 0; margin-top: 18px; font-size: 14.5px; }
+  .goldline { border-left: 4px solid var(--gold); padding: 10px 16px; background: rgba(245,200,107,.07); border-radius: 0 10px 10px 0; margin-top: 18px; font-size: 14.5px; }
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="deck">
+
+  <!-- 1 TITLE -->
+  <section class="slide">
+    <span class="kicker">PreTxSim · Accelerator Pitch</span>
+    <h1>The local security layer <span class="grad">for every onchain transaction.</span></h1>
+    <p class="sub">PreTxSim is an open-source, air-gapped transaction simulation proxy. It rehearses every transaction against live state and blocks the dangerous ones — with nothing ever leaving the user's machine. The privacy-preserving alternative to a market dominated by cloud APIs.</p>
+    <div class="grid3">
+      <div class="card stat"><div class="v">:8545</div><div class="l">drop-in proxy — wallets, bots, agents, CI</div></div>
+      <div class="card stat"><div class="v">0</div><div class="l">bytes of tx data shared with third parties</div></div>
+      <div class="card stat"><div class="v gold">100%</div><div class="l">open-source Rust + revm</div></div>
+    </div>
+    <p class="foot">Skywalkingzulu1 · <span class="mono">github.com/Skywalkingzulu1/pretxsim_poc</span> · Use ← → arrow keys to navigate</p>
+  </section>
+
+  <!-- 2 PROBLEM -->
+  <section class="slide">
+    <span class="kicker">Problem</span>
+    <h2><span class="n">01</span>Signing is blind — and the fixes all phone home</h2>
+    <div class="grid2">
+      <div class="card"><h3>Losses are growing</h3><p>Wallet-drainer phishing stole <b>$494M in 2024</b> (+67% YoY, 332k victims). One malicious approval or EIP-7702 delegation empties a wallet. Agents moving money onchain multiply the attack surface.</p></div>
+      <div class="card"><h3>Incumbents see your flow</h3><p>Blockaid ($83M raised), Tenderly, and wallets' in-house sims all execute <b>on vendor servers</b>. Transaction intent — trade flow, treasury moves, agent behavior — leaks to a third party. Enterprises and funds can't accept that. (Alchemy killed its sim APIs in Sept 2026.)</p></div>
+    </div>
+    <div class="goldline">The gap: no <b>local-first, open, programmable</b> simulation layer exists. Security is a vendor API call — it should be infrastructure you run.</div>
+  </section>
+
+  <!-- 3 SOLUTION -->
+  <section class="slide">
+    <span class="kicker">Solution</span>
+    <h2><span class="n">02</span>A security proxy at the signing moment</h2>
+    <p class="sub">Point anything that signs at <span class="mono">http://127.0.0.1:8545</span>. PreTxSim intercepts <span class="mono">eth_sendTransaction</span>, simulates it locally against live state, produces a risk brief, and gates broadcast on your approval — or your pipeline's.</p>
+    <div class="grid3">
+      <div class="card"><h3>For users</h3><p>Wallet guardrail: malicious txs refused <b>before</b> broadcast, in plain language.</p></div>
+      <div class="card"><h3>For agents &amp; bots</h3><p>Mandatory sandbox: autonomous payments can't drain what simulation blocks.</p></div>
+      <div class="card"><h3>For teams</h3><p><span class="mono">--ci</span> mode: JSON risk reports that fail the build on BLOCK findings.</p></div>
+    </div>
+  </section>
+
+  <!-- 4 PRODUCT -->
+  <section class="slide">
+    <span class="kicker">Product · live today</span>
+    <h2><span class="n">03</span>Working software, not slides</h2>
+<pre><span class="m">$ curl -X POST 127.0.0.1:8545 -d '{"method":"eth_sendTransaction", ...}'</span>
+<span class="c">[*] revm simulation vs live state → balance deltas, gas, storage writes</span>
+<span class="c">[*] RiskInspector → delegatecalls · selfdestruct · allowances · EIP-7702</span>
+<span class="g">[+] Ollama (local) brief: PASS / WARN — zero data leaves the box</span>
+<span class="m">Proceed with broadcast? [y/N]:</span></pre>
+    <div class="grid3">
+      <div class="card stat"><div class="v">✓</div><div class="l"><span class="mono">cargo build</span> green · tested <span class="mono">--ci</span> end to end</div></div>
+      <div class="card stat"><div class="v">✓</div><div class="l"><span class="mono">docker compose up</span> → proxy + Ollama</div></div>
+      <div class="card stat"><div class="v">✓</div><div class="l">Demo video + runbook shipped in-repo</div></div>
+    </div>
+  </section>
+
+  <!-- 5 MARKET -->
+  <section class="slide">
+    <span class="kicker">Market</span>
+    <h2><span class="n">04</span>A validated category with a privacy vacuum</h2>
+    <div class="grid3">
+      <div class="card stat"><div class="v gold">$494M</div><div class="l">stolen by drainers in 2024 — the demand signal</div></div>
+      <div class="card stat"><div class="v gold">$83M</div><div class="l">raised by Blockaid alone — the category is venture-scale</div></div>
+      <div class="card stat"><div class="v gold">6.3B</div><div class="l">transactions scanned by the leader — simulation is default infra now</div></div>
+    </div>
+    <p class="sub" style="margin-top:18px">Wedge strategy: win the segments the cloud can't serve — <b style="color:var(--fg)">privacy-sensitive treasuries, regulated entities, MEV/agent operators, and self-hosted CI</b> — then expand outward as the open standard.</p>
+  </section>
+
+  <!-- 6 BUSINESS MODEL -->
+  <section class="slide">
+    <span class="kicker">Business model</span>
+    <h2><span class="n">05</span>Open core, paid perimeter</h2>
+    <div class="grid3">
+      <div class="card"><h3>Free forever</h3><p>Core proxy, RiskInspector, <span class="mono">--ci</span> — open-source. Distribution and trust.</p></div>
+      <div class="card"><h3>Paid</h3><p><b>Policy packs</b> (compliance rule-sets), <b>team fleet</b> management + audit trails, <b>SLA support</b> for treasuries and agent operators.</p></div>
+      <div class="card"><h3>Why it wins</h3><p>Zero marginal serving cost (runs on the customer's box). Land via developers, expand via compliance officers.</p></div>
+    </div>
+  </section>
+
+  <!-- 7 COMPETITION -->
+  <section class="slide">
+    <span class="kicker">Competition</span>
+    <h2><span class="n">06</span>We don't out-data them. We out-position them.</h2>
+    <div class="grid2">
+      <div class="card"><h3>Them: cloud intelligence</h3><p>Blockaid (6.3B txs of labels), Blowfish/Phantom, WalletGuard/MetaMask, Tenderly. Moat = <b>data network</b>. Price = <b>your transaction flow</b>.</p></div>
+      <div class="card"><h3>Us: local infrastructure</h3><p>Moat = <b>privacy + form factor</b>: the only drop-in, open, offline simulation layer. Plus <span class="mono">--ci</span> enforcement — a surface none of the wallet tools cover.</p></div>
+    </div>
+    <div class="okline">One-liner: <b>they simulate your transaction on their servers — we simulate it on yours.</b></div>
+  </section>
+
+  <!-- 8 TEAM -->
+  <section class="slide">
+    <span class="kicker">Team</span>
+    <h2><span class="n">07</span>Technical solo founder, shipping in public</h2>
+    <div class="grid2">
+      <div class="card"><h3>Builder profile</h3><p>Rust + EVM internals (<span class="mono">revm</span>), local-LLM systems, DevSecOps pipelines. Grant-track record: W3F, Arbitrum, Optimism, Ethereum ESP applications prepared; ZK + agent infrastructure background.</p></div>
+      <div class="card"><h3>Operating style</h3><p>Proof over pitch: every claim ships with a reproducible runbook. 12 hackathon-targeted repos, working CI-gate demo, and a parallel Canton MVP (PreviewGate) built in one session.</p></div>
+    </div>
+    <div class="goldline">Hiring needs: none yet — leverage is code. First hire post-traction: DevRel / partnerships for wallet + agent-treasury distribution.</div>
+  </section>
+
+  <!-- 9 ASK -->
+  <section class="slide">
+    <span class="kicker">The ask</span>
+    <h2><span class="n">08</span>What we're looking for</h2>
+    <div class="grid3">
+      <div class="card"><h3>Design partners</h3><p>Wallets, agent treasuries, MEV teams: run PreTxSim in shadow mode for 2 weeks, compare catches.</p></div>
+      <div class="card"><h3>Pilot deployments</h3><p>One regulated entity + one agent operator on <span class="mono">--ci</span> enforcement by end of quarter.</p></div>
+      <div class="card"><h3>Capital</h3><p>Pre-seed to go multi-chain (Monad, BNB, Base), publish latency benchmarks, and ship compliance policy packs.</p></div>
+    </div>
+    <div class="cta-row">
+      <span class="btn primary">Repo: pretxsim_poc</span>
+      <span class="btn">Demo: demo_runbook.md</span>
+    </div>
+    <p class="foot">PreTxSim — see it before you sign it. · Thank you.</p>
+  </section>
+
+</div>
+
+<div id="hud">
+  <button id="prev" aria-label="Previous">‹</button>
+  <div id="dots"></div>
+  <span id="count">1 / 9</span>
+  <button id="next" aria-label="Next">›</button>
+</div>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var dots = document.getElementById('dots');
+  var count = document.getElementById('count');
+  var bar = document.getElementById('bar');
+  var i = 0;
+  slides.forEach(function (_, k) {
+    var d = document.createElement('span');
+    d.addEventListener('click', function () { go(k); });
+    dots.appendChild(d);
+  });
+  var dotEls = dots.children;
+  function go(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, k) { s.classList.toggle('active', k === i); });
+    for (var k = 0; k < dotEls.length; k++) dotEls[k].classList.toggle('on', k === i);
+    count.textContent = (i + 1) + ' / ' + slides.length;
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+  document.getElementById('prev').addEventListener('click', function () { go(i - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(i + 1); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(i + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(i - 1);
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End') go(slides.length - 1);
+  });
+  var touchX = null;
+  document.addEventListener('touchstart', function (e) { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (touchX === null) return;
+    var dx = e.changedTouches[0].clientX - touchX;
+    if (dx < -40) go(i + 1); else if (dx > 40) go(i - 1);
+    touchX = null;
+  }, { passive: true });
+  var start = parseInt((location.hash || '').replace('#', ''), 10);
+  go(isNaN(start) ? 0 : start - 1);
+})();
+</script>
+</body>
+</html>
