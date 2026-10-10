@@ -1,8 +1,7 @@
-use reqwest::Client;
 use serde_json::json;
 
 pub async fn query_local_agent(analysis_json: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let client = Client::new();
+    let client = crate::config::http_client();
     let prompt = format!(
         "You are an EVM security agent. Analyze this transaction pre-execution structural analysis:\n{}\nBriefly assess risk and give a PASS or WARN recommendation.",
         analysis_json

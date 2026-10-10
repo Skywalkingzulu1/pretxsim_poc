@@ -33,7 +33,7 @@ pub struct RpcCacheDB {
 impl RpcCacheDB {
     pub fn new(rpc_url: String) -> Self {
         Self {
-            client: Client::new(),
+            client: crate::config::http_client(),
             rpc_url,
             block_number: 0,
             cache: RwLock::new(HashMap::new()),
