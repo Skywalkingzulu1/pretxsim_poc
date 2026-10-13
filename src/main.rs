@@ -137,12 +137,13 @@ impl GatekeeperServer {
     /// simulation with the RiskInspector, and consult the local LLM agent.
     /// Shared by the interactive proxy path and `--ci` mode.
     pub async fn simulate_from_value(&self, tx: serde_json::Value) -> Result<(inspector::EVMStructuralAnalysis, ExecutionResult, String), ErrorObjectOwned> {
-        self.simulate_inner(tx, true).await
+        let (a, e, advice, _) = self.simulate_inner(tx, true).await?;
+        Ok((a, e, advice))
     }
 
     /// Core simulation. `call_agent=false` skips the raw Ollama call
     /// (batch mode substitutes the structured brief instead).
-    pub async fn simulate_inner(&self, tx: serde_json::Value, call_agent: bool) -> Result<(inspector::EVMStructuralAnalysis, ExecutionResult, String), ErrorObjectOwned> {
+    pub async fn simulate_inner(&self, tx: serde_json::Value, call_agent: bool) -> Result<(inspector::EVMStructuralAnalysis, ExecutionResult, String, u128), ErrorObjectOwned> {
         let from = tx.get("from").and_then(|v| v.as_str()).unwrap_or("");
         let to = tx.get("to").and_then(|v| v.as_str()).unwrap_or("");
         let value = tx.get("value").and_then(|v| v.as_str()).unwrap_or("0x0");
@@ -183,11 +184,16 @@ impl GatekeeperServer {
         let profile = self.profile.clone();
         let mut inspector = inspector::RiskInspector::default();
 
+        let t_sim = std::time::Instant::now();
         let (analysis, exec_result) = tokio::task::spawn_blocking(move || {
             simulate_transaction(rpc_url, tx_env, &mut inspector, profile)
         }).await
         .map_err(|e| ErrorObjectOwned::owned(-32603, format!("Task join error: {}", e), None::<()>))?
         .map_err(|e| ErrorObjectOwned::owned(-32603, format!("Simulation failed: {}", e), None::<()>))?;
+        // Blocking-call time (microseconds): revm execution + live RPC
+        // state fetch on cache miss. Reported as `sim_micros`; the honest
+        // read is that public-RPC round trips dominate end-to-end latency.
+        let sim_micros = t_sim.elapsed().as_micros();
 
         let advice = if call_agent {
             let summary = serde_json::to_string_pretty(&analysis).unwrap_or_else(|_| "{}".to_string());
@@ -196,7 +202,7 @@ impl GatekeeperServer {
             String::new()
         };
 
-        Ok((analysis, exec_result, advice))
+        Ok((analysis, exec_result, advice, sim_micros))
     }
 }
 
@@ -221,7 +227,7 @@ pub async fn run_single_tx(
     let mut out = serde_json::Map::new();
 
     match server.simulate_inner(tx.clone(), !want_brief).await {
-        Ok((analysis, exec_result, advice)) => {
+        Ok((analysis, exec_result, advice, sim_micros)) => {
             let structural_block = is_structural_block(&analysis);
 
             // Arc x402 gate: machine-to-machine payment inspection.
@@ -275,6 +281,7 @@ pub async fn run_single_tx(
             out.insert("brief".to_string(), brief_val);
             out.insert("x402".to_string(), x402_val);
             out.insert("blocked".to_string(), serde_json::json!(blocked));
+            out.insert("sim_micros".to_string(), serde_json::json!(sim_micros));
         }
         Err(e) => {
             out.insert("chain".to_string(), serde_json::json!(profile.key));
