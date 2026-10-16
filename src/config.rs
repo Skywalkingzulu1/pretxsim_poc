@@ -156,6 +156,8 @@ pub struct CliOptions {
     pub profile: ChainProfile,
     /// Read tx JSON (object or array) from file instead of stdin.
     pub sim_file: Option<String>,
+    /// Route inspection through a named hackathon target adapter.
+    pub target: Option<String>,
     /// Attach local-LLM brief to batch output.
     pub ai_brief: bool,
     /// Force concurrent simulation in batch mode.
@@ -169,6 +171,7 @@ impl Default for CliOptions {
         Self {
             profile: ChainProfile::default(),
             sim_file: None,
+            target: None,
             ai_brief: false,
             monad_parallel_check: false,
             ci: false,
@@ -222,6 +225,11 @@ pub fn parse_args(args: &[String]) -> CliOptions {
             "--sim-file" => {
                 if let Some(v) = next_value(args, &mut i, "--sim-file") {
                     opts.sim_file = Some(v);
+                }
+            }
+            "--target" => {
+                if let Some(v) = next_value(args, &mut i, "--target") {
+                    opts.target = Some(v);
                 }
             }
             "--ai-brief" => opts.ai_brief = true,

@@ -4,6 +4,7 @@ mod rpc_db;
 mod config;
 mod arc_x402_gate;
 mod ollama_risk_brief;
+mod adapters;
 
 use jsonrpsee::core::async_trait;
 use jsonrpsee::proc_macros::rpc;
@@ -20,6 +21,7 @@ use serde_json::{json, Value};
 use std::str::FromStr;
 use std::error::Error;
 use std::env;
+use adapters::AdapterVerdict;
 
 #[rpc(server)]
 pub trait LocalGatekeeper {
@@ -390,8 +392,23 @@ async fn run_batch(opts: config::CliOptions) -> Result<(), Box<dyn Error>> {
         // Restore input order (tasks may finish out of order).
         results.sort_by_key(|r| r.get("index").and_then(|v| v.as_u64()).unwrap_or(0));
     } else {
+        let registry = adapters::default_registry();
+        let target = opts.target.clone();
         for (idx, tx) in txs.into_iter().enumerate() {
-            let mut r = run_single_tx(opts.profile.clone(), tx, opts.ai_brief).await;
+            let mut r = if let Some(t) = &target {
+                match registry.inspect(t, &tx) {
+                    Some(ar) => serde_json::json!({
+                        "target": ar.target,
+                        "verdict": ar.verdict.as_str(),
+                        "reasons": serde_json::to_value(&ar.reasons).unwrap_or(Value::Null),
+                        "details": ar.details,
+                        "blocked": ar.verdict == AdapterVerdict::Block,
+                    }),
+                    None => serde_json::json!({"error": format!("unknown target '{}'", t), "blocked": true}),
+                }
+            } else {
+                run_single_tx(opts.profile.clone(), tx, opts.ai_brief).await
+            };
             if let serde_json::Value::Object(map) = &mut r {
                 map.insert("index".to_string(), serde_json::json!(idx));
             }
@@ -443,6 +460,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
             serde_json::from_str(trimmed).unwrap_or_else(|_| serde_json::json!({}))
         };
         let server = GatekeeperServer::with_profile(profile);
+        if let Some(t) = &opts.target {
+            let registry = adapters::default_registry();
+            match registry.inspect(t, &tx) {
+                Some(ar) => {
+                    println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                        "target": ar.target,
+                        "verdict": ar.verdict.as_str(),
+                        "reasons": ar.reasons,
+                        "details": ar.details,
+                        "blocked": ar.verdict == AdapterVerdict::Block,
+                    })).unwrap());
+                    if ar.verdict == AdapterVerdict::Block {
+                        std::process::exit(1);
+                    }
+                    return Ok(());
+                }
+                None => {
+                    let out = serde_json::json!({ "error": format!("unknown target '{}'", t), "blocked": true });
+                    eprintln!("{}", serde_json::to_string(&out).unwrap());
+                    std::process::exit(1);
+                }
+            }
+        }
         match server.simulate_from_value(tx).await {
             Ok((analysis, exec_result, advice)) => {
                 let out = serde_json::json!({
