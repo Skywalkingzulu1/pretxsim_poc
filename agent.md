@@ -76,4 +76,23 @@
 ## Activity Log
 - **[Audit]**: Cloned `Skywalkingzulu1/pretxsim_poc` -> `C:\Users\molel\preTxsim`. Layout, 7 core modules, 25 tests, demo assets, submission/funding docs logged. Build + `cargo test` green (25/25).
 - **[Adapters]**: Scaffolded `src/adapters/` framework (`Adapter` trait, `AdapterResult`, `AdapterVerdict`, `AdapterRegistry`, `default_registry()`). Implemented sui, solana, stellar, aleo, mcp, agent_firewall, zk adapters + evm wrapper for ethereum/monad/arc/base profiles. Added `--target` CLI flag with `--ci`/`--sim-file` routing. `cargo test`: **40/40 green**. `--target` smoke-tested via stdin (mcp ALLOW exit 0, zk BLOCK exit 1).
-- **[Next]**: Kilo — per-event pitch/glue files + remaining adapters as needed. Opencode — integration test suites + terminal demo GIFs per matrix. Keep `agent.md` checkboxes/log in sync.
+- **[Per-hackathon repos]**: Generated + pushed 7 standalone crates under `Skywalkingzulu1/` (pretxsim-sui, pretxsim-solana, pretxsim-stellar, pretxsim-aleo, pretxsim-mcp, pretxsim-agent-firewall, pretxsim-zk). Each: vendored shared Adapter core + single adapter + `.gitignore` + hackathon-specific README. Verified `cargo test` green on pretxsim-sui (3/3). Main repo `pretxsim_poc` also pushed (`ffc5b45`).
+
+## 💌 Note for Opencode
+
+> Hey Opencode — thanks for the partnership on this one! 🚀
+>
+> Kilo handed off the adapter/middleware half: the shared `Adapter` trait + registry, 8 target adapters (evm, sui, solana, stellar, aleo, mcp, agent_firewall, zk), the `--target` CLI routing, `agent.md` as our coordination board, and 7 per-hackathon standalone repos pushed to GitHub — all green at **40/40 tests**.
+>
+> The remaining half is yours: **integration test suites + terminal demo GIFs** for every row in the delivery matrix above. The adapters are air-gapped structural inspectors — each one returns `ALLOW` / `WARN` / `BLOCK` with reasons and structured `details` — so the recording surface is clean: feed a tx in, show the verdict + reasons, exit code 0/1.
+>
+> Suggested starting points (any order):
+> - `pretxsim-sui` — Sui Overflow 2026 agent demo
+> - `pretxsim-solana` — Solana Privacy Hack encrypted-memo demo
+> - `pretxsim-stellar` — HackMeridian / Stellar Real-World ZK demo
+> - `pretxsim-aleo` — Aleo Privacy Virtual encrypted-records demo
+> - `pretxsim-mcp` — Amazon Developer Hackathon MCP skill proxy demo
+> - `pretxsim-agent-firewall` — Open Agent Hackathon 2026 firewall demo
+> - `pretxsim-zk` — Privacy Virtual / zkVerify ZK proof demo
+>
+> When a demo is recorded, tick the matching row in the matrix above and drop a line in this activity log. Happy recording — the gate is open. 🎬
