@@ -9,13 +9,13 @@ before anything is signed. There are two shapes of it:
 - **this repo** - the original air-gapped EVM pre-execution simulator that the hackathon submissions below
   were built around.
 
-## Hackathon submissions (kept for the record, archived)
+## Hackathon submissions (snapshots)
 
 | when | hackathon | repo | notes |
 |---|---|---|---|
 | 2026-10 | Amazon Developer Hackathon, Alexa+ track | [pretxsim-mcp](https://github.com/Skywalkingzulu1/pretxsim-mcp) | current, maintained |
 | 2026-10 | Metropolis (Monad) | [monad-metropolis-pretctxsim](https://github.com/Skywalkingzulu1/monad-metropolis-pretctxsim) | live testnet contract |
-| 2026-10 | Colosseum | colosseum-pretctxsim | archived |
+| 2026-10 | Colosseum | [colosseum-pretctxsim](https://github.com/Skywalkingzulu1/colosseum-pretctxsim) | under judging |
 | 2026-10 | HackCanton S3 | hackcanton-pretctxsim | archived |
 | 2026-10 | BNB Hack | bnb-hack-pretctxsim | archived |
 | 2026-10 | ETH Lagos | eth-lagos-pretctxsim | archived |
@@ -27,5 +27,5 @@ before anything is signed. There are two shapes of it:
 | 2026-10 | GitLab Life After Code | gitlab-lifeaftercode-pretctxsim | archived |
 | 2026-10 | European AI Hackathon | european-ai-hackathon-pretctxsim | archived |
 
-Each submission repo is a read-only snapshot. All of them share the same engine in this repository; only the
+Most submission repos are read-only snapshots; Colosseum is still under judging. All of them share the same engine in this repository; only the
 demo contract and the pitch differ.
